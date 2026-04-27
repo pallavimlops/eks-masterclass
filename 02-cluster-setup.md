@@ -1,4 +1,4 @@
-# 02 — Cluster Setup
+## 02 — Cluster Setup
 ## Create EKS Cluster Step by Step
 
 ---
