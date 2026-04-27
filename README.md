@@ -1,9 +1,7 @@
 # EKS Complete Guide
-## DevOps & AWS Institute
-
 ---
 
-## What is in this repo okay!
+## What is in this repo !
 
 ```
 📄 01-prerequisites.md        → tools to install before starting okay!
@@ -16,7 +14,7 @@
 
 ---
 
-## How to follow this repo okay!
+## How to follow this repo !
 
 ```
 Step 1 → 01-prerequisites.md
@@ -45,7 +43,7 @@ Step 6 → 06-eks-upgrade.md
 
 ---
 
-## Important Note okay!
+## Important Note !!
 
 ```
 Always delete cluster after practice okay!
