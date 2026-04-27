@@ -148,16 +148,6 @@ https://www.docker.com/products/docker-desktop/
 docker --version
 ```
 
-### Recommended settings
-```
-Open Docker Desktop
-→ Settings → Resources
-→ CPU    → 2
-→ Memory → 2 GB
-→ Apply and Restart
-```
-
----
 
 ## IAM User Permissions
 
