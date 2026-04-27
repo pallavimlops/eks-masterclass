@@ -1,13 +1,11 @@
 # 02 — Cluster Setup
-## Create EKS Cluster Step by Step okay!
+## Create EKS Cluster Step by Step
 
 ---
 
-# PART 1 — CREATE EKS CLUSTER okay!
+# PART 1 — CREATE EKS CLUSTER
 
----
-
-## Step 1 — Create Cluster okay!
+## Step 1 — Create Cluster
 
 ```bash
 eksctl create cluster \
@@ -20,18 +18,18 @@ eksctl create cluster \
   --nodes-max 1
 ```
 
-Wait 10-15 minutes okay!
+Wait 10-15 minutes.
 
-### Instance type recommendation okay!
+### Instance type recommendation
 ```
-t2.micro  → ❌ Too small for EKS okay!
-t3.small  → ⚠️  Tight but works okay!
-t3.medium → ✅ Recommended okay!
+t2.micro  → ❌ Too small for EKS
+t3.small  → ⚠️  Tight but works
+t3.medium → ✅ Recommended
 ```
 
 ---
 
-## Step 2 — Connect kubectl to Cluster okay!
+## Step 2 — Connect kubectl to Cluster
 
 ```bash
 aws eks update-kubeconfig \
@@ -39,12 +37,12 @@ aws eks update-kubeconfig \
   --name demo-1
 ```
 
-### Verify connection okay!
+### Verify connection
 ```bash
 kubectl get nodes
 ```
 
-Expected output okay!
+Expected output:
 ```
 NAME                            STATUS   ROLES    AGE
 ip-xxx-xxx-xxx-xxx.ec2.internal  Ready    <none>   5m
@@ -52,7 +50,7 @@ ip-xxx-xxx-xxx-xxx.ec2.internal  Ready    <none>   5m
 
 ---
 
-## Step 3 — Verify Addons okay!
+## Step 3 — Verify Addons
 
 ```bash
 aws eks list-addons \
@@ -60,7 +58,7 @@ aws eks list-addons \
   --region us-east-1
 ```
 
-Should show these 4 okay!
+Should show these 4:
 ```
 ✅ coredns
 ✅ eks-pod-identity-agent
@@ -70,139 +68,67 @@ Should show these 4 okay!
 
 ---
 
-# PART 2 — CREATE ECR REPOSITORY okay!
+# PART 2 — CREATE ECR REPOSITORY
 
 ```bash
 aws ecr create-repository \
-  --repository-name telecom-app \
+  --repository-name <your-app-name> \
   --region us-east-1
 ```
 
 ---
 
-# PART 3 — BUILD AND PUSH DOCKER IMAGE okay!
+# PART 3 — BUILD AND PUSH DOCKER IMAGE
 
 ```bash
-# Go to app folder okay!
-cd /c/eks-teaching/telecom-app
-
-# Get your account ID okay!
+# Get your account ID
 aws sts get-caller-identity --query Account --output text
 
-# Build image okay!
-docker build -t telecom-app .
+# Build image
+docker build -t <your-app-name> .
 
-# Login to ECR okay!
+# Login to ECR
 aws ecr get-login-password --region us-east-1 | docker login \
   --username AWS \
   --password-stdin <account-id>.dkr.ecr.us-east-1.amazonaws.com
 
-# Tag image okay!
-docker tag telecom-app:latest \
-  <account-id>.dkr.ecr.us-east-1.amazonaws.com/telecom-app:v1
+# Tag image
+docker tag <your-app-name>:latest \
+  <account-id>.dkr.ecr.us-east-1.amazonaws.com/<your-app-name>:v1
 
-# Push image okay!
+# Push image
 docker push \
-  <account-id>.dkr.ecr.us-east-1.amazonaws.com/telecom-app:v1
+  <account-id>.dkr.ecr.us-east-1.amazonaws.com/<your-app-name>:v1
 ```
 
-Replace `<account-id>` with your AWS account ID okay!
+Replace `<account-id>` with your AWS account ID.
 
 ---
 
-# PART 4 — INSTALL AWS LOAD BALANCER CONTROLLER okay!
-
-This is needed to create ALB from Ingress okay!
+# PART 4 — DEPLOY APPLICATION
 
 ```bash
-# Step 1 — Download IAM policy okay!
-curl -O https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/main/docs/install/iam_policy.json
-
-# Step 2 — Create IAM policy okay!
-aws iam create-policy \
-  --policy-name AWSLoadBalancerControllerIAMPolicy \
-  --policy-document file://iam_policy.json
-
-# Step 3 — Create OIDC provider okay!
-eksctl utils associate-iam-oidc-provider \
-  --region us-east-1 \
-  --cluster demo-1 \
-  --approve
-
-# Step 4 — Create service account okay!
-eksctl create iamserviceaccount \
-  --cluster demo-1 \
-  --namespace kube-system \
-  --name aws-load-balancer-controller \
-  --attach-policy-arn arn:aws:iam::<account-id>:policy/AWSLoadBalancerControllerIAMPolicy \
-  --approve \
-  --region us-east-1
-
-# Step 5 — Get VPC ID okay!
-aws eks describe-cluster \
-  --name demo-1 \
-  --region us-east-1 \
-  --query "cluster.resourcesVpcConfig.vpcId" \
-  --output text
-
-# Step 6 — Install controller okay!
-helm repo add eks https://aws.github.io/eks-charts
-helm repo update
-
-helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
-  -n kube-system \
-  --set clusterName=demo-1 \
-  --set serviceAccount.create=false \
-  --set serviceAccount.name=aws-load-balancer-controller \
-  --set region=us-east-1 \
-  --set vpcId=<your-vpc-id>
-
-# Step 7 — Verify controller is running okay!
-kubectl get pods -n kube-system | grep aws-load-balancer
-```
-
-Replace `<account-id>` and `<your-vpc-id>` okay!
-
----
-
-# PART 5 — UPDATE DEPLOYMENT.YAML okay!
-
-Open `telecom-app/k8s/deployment.yaml` okay!
-Replace image line with your ECR URL okay!
-
-```yaml
-image: <account-id>.dkr.ecr.us-east-1.amazonaws.com/telecom-app:v1
+kubectl apply -f k8s/deployment.yaml
+kubectl apply -f k8s/service.yaml
+kubectl apply -f k8s/ingress.yaml
 ```
 
 ---
 
-# PART 6 — DEPLOY TELECOM APP okay!
-
-```bash
-cd /c/eks-teaching/telecom-app/k8s
-
-kubectl apply -f deployment.yaml
-kubectl apply -f service.yaml
-kubectl apply -f ingress.yaml
-```
-
----
-
-# PART 7 — GET ALB URL okay!
+# PART 5 — GET ALB URL
 
 ```bash
 kubectl get ingress
 ```
 
-Copy ADDRESS and open in browser okay!
-
+Copy ADDRESS and open in browser:
 ```
 http://<alb-url>/health
 ```
 
 ---
 
-# COMPLETE FLOW okay!
+# COMPLETE FLOW
 
 ```
 Install tools (01-prerequisites.md)
@@ -213,11 +139,9 @@ Create ECR repository
         ↓
 Build and push Docker image
         ↓
-Install AWS Load Balancer Controller
+Install AWS Load Balancer Controller (03-ingress-controller.md)
         ↓
-Deploy telecom app (deployment, service, ingress)
+Deploy application (deployment, service, ingress)
         ↓
-Get ALB URL
-        ↓
-Test in browser okay!
+Get ALB URL and test in browser
 ```
