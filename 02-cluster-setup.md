@@ -24,8 +24,6 @@ Wait 10-15 minutes.
 ```
 t2.micro  → ❌ Too small for EKS
 t3.small  → ⚠️  Tight but works
-t3.medium → ✅ Recommended
-```
 
 ---
 
